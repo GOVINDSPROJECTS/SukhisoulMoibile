@@ -1,0 +1,115 @@
+{
+  "Light": {
+    "$type": "string",
+    "$value": "Light",
+    "$extensions": {
+      "com.figma.variableId": "VariableID:1182:1592",
+      "com.figma.hiddenFromPublishing": true,
+      "com.figma.scopes": [
+        "FONT_STYLE"
+      ],
+      "com.figma.type": "string"
+    }
+  },
+  "Regular": {
+    "$type": "string",
+    "$value": "Regular",
+    "$extensions": {
+      "com.figma.variableId": "VariableID:1182:1590",
+      "com.figma.hiddenFromPublishing": true,
+      "com.figma.scopes": [
+        "FONT_STYLE"
+      ],
+      "com.figma.type": "string"
+    }
+  },
+  "Medium": {
+    "$type": "string",
+    "$value": "Medium",
+    "$extensions": {
+      "com.figma.variableId": "VariableID:1182:1588",
+      "com.figma.hiddenFromPublishing": true,
+      "com.figma.scopes": [
+        "FONT_STYLE"
+      ],
+      "com.figma.type": "string"
+    }
+  },
+  "Semibond": {
+    "$type": "string",
+    "$value": "Semibold",
+    "$extensions": {
+      "com.figma.variableId": "VariableID:1182:1587",
+      "com.figma.hiddenFromPublishing": true,
+      "com.figma.scopes": [
+        "FONT_STYLE"
+      ],
+      "com.figma.type": "string"
+    }
+  },
+  "Bold": {
+    "$type": "string",
+    "$value": "Bold",
+    "$extensions": {
+      "com.figma.variableId": "VariableID:1182:1589",
+      "com.figma.hiddenFromPublishing": true,
+      "com.figma.scopes": [
+        "FONT_STYLE"
+      ],
+      "com.figma.type": "string"
+    }
+  },
+  "Black": {
+    "$type": "string",
+    "$value": "Black",
+    "$extensions": {
+      "com.figma.variableId": "VariableID:1182:1591",
+      "com.figma.hiddenFromPublishing": true,
+      "com.figma.scopes": [
+        "FONT_STYLE"
+      ],
+      "com.figma.type": "string"
+    }
+  },
+  "Black 2": {
+    "$type": "string",
+    "$value": "ExtraBold",
+    "$extensions": {
+      "com.figma.variableId": "VariableID:1182:1586",
+      "com.figma.hiddenFromPublishing": true,
+      "com.figma.scopes": [
+        "FONT_STYLE"
+      ],
+      "com.figma.type": "string"
+    }
+  },
+  "Font": {
+    "Font family": {
+      "$type": "string",
+      "$value": "Manrope",
+      "$extensions": {
+        "com.figma.variableId": "VariableID:1182:1609",
+        "com.figma.hiddenFromPublishing": true,
+        "com.figma.scopes": [
+          "ALL_SCOPES"
+        ],
+        "com.figma.type": "string"
+      }
+    },
+    "Font family 2": {
+      "$type": "string",
+      "$value": "DM sans",
+      "$extensions": {
+        "com.figma.variableId": "VariableID:1182:1608",
+        "com.figma.hiddenFromPublishing": true,
+        "com.figma.scopes": [
+          "ALL_SCOPES"
+        ],
+        "com.figma.type": "string"
+      }
+    }
+  },
+  "$extensions": {
+    "com.figma.modeName": "Mode 1"
+  }
+}
