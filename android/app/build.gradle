@@ -77,6 +77,12 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
+    externalNativeBuild {
+        cmake {
+            buildStagingDirectory file("C:/b/cxx")
+        }
+    }
+
     namespace "com.sukhisoul_mobile"
     defaultConfig {
         applicationId "com.sukhisoul_mobile"
@@ -115,10 +121,13 @@ dependencies {
     // This pulls in Fresco's GIF decoder at the same version React Native uses internally.
     implementation("com.facebook.fresco:animated-gif:3.6.0")
 
-    if (hermesEnabled.toBoolean()) {
+    def isHermesEnabled = project.hasProperty("hermesEnabled") ? project.property("hermesEnabled").toBoolean() : true
+    if (isHermesEnabled) {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
     }
-    apply plugin: 'com.google.gms.google-services'
 }
+
+apply plugin: 'com.google.gms.google-services'
+

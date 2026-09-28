@@ -32,7 +32,7 @@ export const VideoCallScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [permissionsGranted, setPermissionsGranted] = useState(Platform.OS === 'ios');
   const [callSeconds, setCallSeconds] = useState(0);
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<WebView<{}>>(null);
 
   // Request Android Camera & Microphone permissions on mount
   useEffect(() => {

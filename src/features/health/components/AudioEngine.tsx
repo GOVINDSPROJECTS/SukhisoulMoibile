@@ -18,7 +18,7 @@ interface AudioEngineProps {
  */
 export const AudioEngine = forwardRef<AudioEngineRef, AudioEngineProps>(
   ({ isPlaying }, ref) => {
-    const webViewRef = useRef<WebView>(null);
+    const webViewRef = useRef<WebView<{}>>(null);
 
     const audioHtml = `
 <!DOCTYPE html>
