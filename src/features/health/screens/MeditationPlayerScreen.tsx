@@ -115,15 +115,21 @@ export const MeditationPlayerScreen: React.FC = () => {
   const minLeftStr = formatTime(remainingSec);
   const progressRatio = elapsedSec / currentTrack.durationSec;
 
+  // Stop audio when screen unmounts
+  useEffect(() => {
+    return () => {
+      audioEngineRef.current?.stopAudio();
+    };
+  }, []);
+
   // Toggle Play/Pause (On/Off)
   const handleTogglePlay = () => {
     const nextState = !isPlaying;
     setIsPlaying(nextState);
     if (nextState) {
-      // Play authentic 2-5s calming singing bowl chime
-      audioEngineRef.current?.playChime(currentTrack.pitch);
+      audioEngineRef.current?.playTrack(currentTrack);
     } else {
-      audioEngineRef.current?.stopAudio();
+      audioEngineRef.current?.pauseAudio();
     }
   };
 
@@ -133,7 +139,7 @@ export const MeditationPlayerScreen: React.FC = () => {
     setCurrentTrackIndex(nextIdx);
     setElapsedSec(PLAYLIST[nextIdx].initialElapsedSec);
     if (isPlaying) {
-      audioEngineRef.current?.playChime(PLAYLIST[nextIdx].pitch);
+      audioEngineRef.current?.playTrack(PLAYLIST[nextIdx]);
     }
   };
 
@@ -144,7 +150,7 @@ export const MeditationPlayerScreen: React.FC = () => {
     setCurrentTrackIndex(prevIdx);
     setElapsedSec(PLAYLIST[prevIdx].initialElapsedSec);
     if (isPlaying) {
-      audioEngineRef.current?.playChime(PLAYLIST[prevIdx].pitch);
+      audioEngineRef.current?.playTrack(PLAYLIST[prevIdx]);
     }
   };
 
@@ -152,6 +158,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const handleSeek = (ratio: number) => {
     const newElapsed = Math.floor(ratio * currentTrack.durationSec);
     setElapsedSec(newElapsed);
+    audioEngineRef.current?.seekAudio(ratio);
   };
 
   return (

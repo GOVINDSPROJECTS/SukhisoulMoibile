@@ -24,6 +24,7 @@ import { ChatInputBar } from '../components/ChatInputBar';
 import LinearGradient from 'react-native-linear-gradient';
 import { LockKeyhole } from 'lucide-react-native';
 import { chatService, ChatMessage } from '../api/chatService';
+import { chatRealtimeService } from '../services/chatRealtimeService';
 
 type AnyMessageType =
   | (ChatMessageType & { type: 'text' })
@@ -99,9 +100,10 @@ export const ChatScreen: React.FC = () => {
     [therapist.avatarUrl]
   );
 
-  // Initialize conversation if needed
+  // Initialize conversation & real-time WebSocket subscriptions
   useEffect(() => {
     let isMounted = true;
+    let unsubscribeWs: (() => void) | null = null;
 
     async function initChat() {
       let currentConvId = conversationId;
@@ -119,12 +121,29 @@ export const ChatScreen: React.FC = () => {
       if (currentConvId && isMounted) {
         await loadMessages(currentConvId, true);
 
-        // Start fast 1.2s polling for real-time replies
+        // Real-time WebSocket listener
+        unsubscribeWs = chatRealtimeService.subscribeToConversation(
+          currentConvId,
+          (incomingMsg) => {
+            if (isMounted) {
+              setMessages((prev) => {
+                const exists = prev.some((m) => m.id === incomingMsg.uuid);
+                if (exists) return prev;
+                return [...prev, mapApiMessage(incomingMsg)];
+              });
+              if (!incomingMsg.is_me) {
+                chatService.markAsRead(currentConvId);
+              }
+            }
+          }
+        );
+
+        // Resilient fallback sync (only when WebSocket is not connected)
         pollTimerRef.current = setInterval(() => {
-          if (currentConvId) {
+          if (currentConvId && !chatRealtimeService.isConnected()) {
             loadMessages(currentConvId, false);
           }
-        }, 1200);
+        }, 15000);
       } else {
         setIsLoading(false);
       }
@@ -134,6 +153,9 @@ export const ChatScreen: React.FC = () => {
 
     return () => {
       isMounted = false;
+      if (unsubscribeWs) {
+        unsubscribeWs();
+      }
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
       }
@@ -223,10 +245,15 @@ export const ChatScreen: React.FC = () => {
     );
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
+    const idsToDelete = Array.from(selectedIds);
     setMessages((prev) => prev.filter((msg) => !selectedIds.has(msg.id)));
     setSelectedIds(new Set());
     setIsDeleteModalVisible(false);
+
+    if (conversationId && idsToDelete.length > 0) {
+      await chatService.deleteMessages(conversationId, idsToDelete);
+    }
   };
 
   const renderMessage = ({ item }: { item: AnyMessageType }) => {

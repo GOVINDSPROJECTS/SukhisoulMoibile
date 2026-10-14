@@ -74,4 +74,28 @@ export const chatService = {
       // Non-blocking
     }
   },
+
+  /**
+   * Delete a single message from the conversation
+   */
+  async deleteMessage(conversationUuid: string, messageUuid: string): Promise<void> {
+    try {
+      await api.delete(`/v1/conversations/${conversationUuid}/messages/${messageUuid}`);
+    } catch (e) {
+      console.warn('Failed to delete message on server:', e);
+    }
+  },
+
+  /**
+   * Bulk delete messages from the conversation
+   */
+  async deleteMessages(conversationUuid: string, messageUuids: string[]): Promise<void> {
+    try {
+      await api.delete(`/v1/conversations/${conversationUuid}/messages`, {
+        data: { message_ids: messageUuids },
+      });
+    } catch (e) {
+      console.warn('Failed to delete messages on server:', e);
+    }
+  },
 };
