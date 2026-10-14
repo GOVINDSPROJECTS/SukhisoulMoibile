@@ -8,3 +8,27 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# Razorpay Proguard Rules
+-keepattributes *Annotation*
+-dontwarn com.razorpay.**
+-keep class com.razorpay.** {*;}
+-optimizations !class/merging/vertical*,!class/merging/horizontal*
+-keepclasseswithmembers class * {
+    public void onPaymentSuccess(java.lang.String);
+    public void onPaymentError(int, java.lang.String);
+}
+
+# React Native & Hermes Optimization Keep Rules
+-keep class com.facebook.hermes.unicode.** { *; }
+-keep class com.facebook.jni.** { *; }
+-keep class com.facebook.react.** { *; }
+
+# Lottie Animations
+-keep class com.airbnb.lottie.** { *; }
+
+# OkHttp & Networking
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
+

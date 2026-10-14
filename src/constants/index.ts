@@ -17,18 +17,18 @@ export const API_ENDPOINTS = {
     ME: '/v1/auth/me',
   },
   USER: {
-    PROFILE: '/v1/user/profile',
+    PROFILE: '/v1/users/me',
     ME: '/v1/users/me',
   },
   PROFESSIONALS: {
     BASE: '/v1/professionals',
   },
   HABITS: {
-    BASE: '/habits',
-    TOGGLE: (id: string) => `/habits/${id}/toggle`,
+    BASE: '/v1/wellness/habits',
+    TOGGLE: (id: string) => `/v1/daily-tasks/${id}/toggle`,
   },
   MOOD: {
-    BASE: '/mood-logs',
+    BASE: '/v1/mood',
   },
   SETTINGS: '/settings',
 };
