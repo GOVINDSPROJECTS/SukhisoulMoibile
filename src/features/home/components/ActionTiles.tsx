@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '@theme/index';
 import { AppText } from '@components/atoms/AppText';
@@ -7,9 +7,34 @@ import { normalize } from '@utils/responsive';
 import { Gift, User, Package, Calendar, User2 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import type { NavigationProp } from '@navigation/types';
+import { FEATURE_FLAGS } from '@constants/featureFlags';
 
 export const ActionTiles: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+
+  const handleGiftTherapy = () => {
+    if (!FEATURE_FLAGS.ENABLE_GIFT_FLOW) {
+      Alert.alert(
+        'Gifting Coming Soon 🎁',
+        'Personalized digital gift passes and therapy vouchers for your loved ones will be available in the next update. Stay tuned!',
+        [{ text: 'Got it' }],
+      );
+      return;
+    }
+    navigation.navigate('GiftIntro');
+  };
+
+  const handleReceiveTherapy = () => {
+    if (!FEATURE_FLAGS.ENABLE_GIFT_FLOW) {
+      Alert.alert(
+        'Voucher Redemption Coming Soon 🎟️',
+        'Redeeming gifted therapy vouchers will be available in the next update. Stay tuned!',
+        [{ text: 'Got it' }],
+      );
+      return;
+    }
+    navigation.navigate('GiftReceiverUnlock');
+  };
 
   return (
     <View style={styles.container}>
@@ -54,7 +79,7 @@ export const ActionTiles: React.FC = () => {
           <TouchableOpacity
             style={styles.giftBtn}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('GiftIntro')}
+            onPress={handleGiftTherapy}
           >
             <View style={styles.btnIconBoxGift}>
               <Package size={normalize(15)} color="#FFFFFF" />
@@ -73,7 +98,7 @@ export const ActionTiles: React.FC = () => {
           <TouchableOpacity
             style={styles.receiveBtn}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('GiftReceiverUnlock')}
+            onPress={handleReceiveTherapy}
           >
             <View style={styles.btnIconBoxReceive}>
               <User2 size={normalize(14)} color="#374151" />

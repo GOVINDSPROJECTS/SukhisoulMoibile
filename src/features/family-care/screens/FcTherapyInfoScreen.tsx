@@ -16,6 +16,7 @@ import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { normalize } from '@utils/responsive';
 import { colors, useTheme } from '@theme/index';
 import { FcDropdown } from '../components/FcDropdown';
+import { useFamilyCareStore } from '../store/useFamilyCareStore';
 import type { NavigationProp } from '@navigation/types';
 
 // ─── Static options ───────────────────────────────────────────────────────────
@@ -90,9 +91,16 @@ export const FcTherapyInfoScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { borderRadius } = useTheme();
 
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
-  const [therapyHistory, setTherapyHistory] = useState<TherapyHistoryOption | null>(null);
-  const [therapistNote, setTherapistNote] = useState('');
+  const storedInfo = useFamilyCareStore((state) => state.dependentInfo);
+  const setDependentTherapyInfo = useFamilyCareStore((state) => state.setDependentTherapyInfo);
+
+  const [selectedReason, setSelectedReason] = useState<string | null>(
+    storedInfo.therapyReason || null,
+  );
+  const [therapyHistory, setTherapyHistory] = useState<TherapyHistoryOption | null>(
+    (storedInfo.therapyHistory as TherapyHistoryOption) || null,
+  );
+  const [therapistNote, setTherapistNote] = useState(storedInfo.therapistNote || '');
   const [errors, setErrors] = useState<FormErrors>({});
 
   const handleContinue = useCallback(() => {
@@ -102,8 +110,13 @@ export const FcTherapyInfoScreen: React.FC = () => {
       return;
     }
     setErrors({});
+    setDependentTherapyInfo({
+      therapyReason: selectedReason || '',
+      therapyHistory: therapyHistory || '',
+      therapistNote: therapistNote.trim(),
+    });
     navigation.navigate('FcSelectTherapist');
-  }, [navigation, selectedReason, therapyHistory, therapistNote]);
+  }, [navigation, selectedReason, therapyHistory, therapistNote, setDependentTherapyInfo]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>

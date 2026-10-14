@@ -46,8 +46,10 @@ export const FcBookSessionScreen: React.FC = () => {
       date: dateLabel,
       time: selectedSlot,
       duration: '45 Minutes',
+      price: price || 500,
+      isFamilyCare: true,
     });
-  }, [navigation, doctorName, doctorId, designation, dateLabel, selectedSlot]);
+  }, [navigation, doctorName, doctorId, designation, dateLabel, selectedSlot, price]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>

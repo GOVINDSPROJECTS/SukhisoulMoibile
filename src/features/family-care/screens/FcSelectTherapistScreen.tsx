@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
   StyleSheet,
   StatusBar,
   ListRenderItemInfo,
+  ActivityIndicator,
 } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -16,8 +17,10 @@ import { TherapistCard, type TherapistData } from '@features/explore-psychologis
 import { normalize } from '@utils/responsive';
 import { colors } from '@theme/index';
 import type { NavigationProp } from '@navigation/types';
+import { useProfessionals } from '@features/home/hooks/useProfessionals';
+import { getProfessionalAvatar } from '@api/professionals';
 
-// ─── Static data (mirrors ExplorePsychologistsScreen) ─────────────────────────
+// ─── Static Fallback Data ───────────────────────────────────────────────────
 
 const THERAPISTS: TherapistData[] = [
   {
@@ -84,6 +87,32 @@ export const FcSelectTherapistScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
 
+  const { data: apiData, isLoading } = useProfessionals({ per_page: 20 });
+  const rawProfessionals = apiData?.data ?? [];
+
+  const displayTherapists: TherapistData[] = useMemo(() => {
+    if (!rawProfessionals || rawProfessionals.length === 0) return THERAPISTS;
+    return rawProfessionals.map((pro) => ({
+      id: pro.uuid,
+      name: pro.user?.name ?? 'Dr. Expert',
+      designation: pro.highest_qualification || 'Clinical Psychologist',
+      specialty: Array.isArray(pro.expertise)
+        ? pro.expertise.join(', ')
+        : (pro.expertise || 'Family & Relationships'),
+      rating: pro.rating ? parseFloat(pro.rating) : 4.8,
+      reviewCount: pro.total_reviews || 45,
+      nextSlot: 'Today, Available',
+      sessionPrice: pro.consultation_fee ? Math.round(parseFloat(pro.consultation_fee)) : 500,
+      currency: '₹',
+      hasFreeIntro: !!pro.offers_free_intro_session,
+      avatarUrl: getProfessionalAvatar(pro),
+      bio: pro.bio,
+      languages: Array.isArray(pro.languages_spoken) ? pro.languages_spoken : ['English', 'Hindi'],
+      expertise: Array.isArray(pro.expertise) ? pro.expertise : ['Family', 'Anxiety'],
+      experience: pro.years_experience ? `${pro.years_experience}+ yrs` : '6+ yrs',
+    }));
+  }, [rawProfessionals]);
+
   const handleBookNow = useCallback(
     (therapist: TherapistData) => {
       navigation.navigate('FcBookSession', {
@@ -130,7 +159,7 @@ export const FcSelectTherapistScreen: React.FC = () => {
       {/* Info banner */}
       <View style={styles.infoBanner}>
         <AppText variant="caption" weight="regular" style={styles.infoBannerText}>
-          Suggestions are based on the information provided, so make sure you fill accurate information !
+          Suggestions are tailored for family care and based on your provided information.
         </AppText>
       </View>
     </>
@@ -141,18 +170,24 @@ export const FcSelectTherapistScreen: React.FC = () => {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={false} />
       <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
         <View style={{ paddingTop: insets.top, backgroundColor: colors.lightTints.blueLightTint[50] }} />
-        <FlatList<TherapistData>
-          data={THERAPISTS}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          ListHeaderComponent={ListHeader}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          initialNumToRender={4}
-          maxToRenderPerBatch={4}
-          windowSize={6}
-          removeClippedSubviews
-        />
+        {isLoading && rawProfessionals.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.lightAppTheme[500]} />
+          </View>
+        ) : (
+          <FlatList<TherapistData>
+            data={displayTherapists}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            ListHeaderComponent={ListHeader}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            initialNumToRender={4}
+            maxToRenderPerBatch={4}
+            windowSize={6}
+            removeClippedSubviews
+          />
+        )}
       </SafeAreaView>
     </>
   );

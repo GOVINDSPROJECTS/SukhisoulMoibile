@@ -18,6 +18,7 @@ import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { normalize } from '@utils/responsive';
 import { colors, useTheme } from '@theme/index';
 import { FcDropdown } from '../components/FcDropdown';
+import { useFamilyCareStore } from '../store/useFamilyCareStore';
 import type { NavigationProp } from '@navigation/types';
 
 // ─── Static options ───────────────────────────────────────────────────────────
@@ -110,12 +111,19 @@ export const FcFillInfoScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { borderRadius } = useTheme();
 
-  const [profilePic, setProfilePic] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [relation, setRelation] = useState<string | null>(null);
-  const [healthIssue, setHealthIssue] = useState<HealthOption | null>(null);
-  const [therapyReason, setTherapyReason] = useState<string | null>(null);
+  const storedInfo = useFamilyCareStore((state) => state.dependentInfo);
+  const setDependentBasicInfo = useFamilyCareStore((state) => state.setDependentBasicInfo);
+
+  const [profilePic, setProfilePic] = useState<string | null>(storedInfo.profilePic);
+  const [name, setName] = useState(storedInfo.name);
+  const [age, setAge] = useState(storedInfo.age);
+  const [relation, setRelation] = useState<string | null>(storedInfo.relation || null);
+  const [healthIssue, setHealthIssue] = useState<HealthOption | null>(
+    (storedInfo.healthIssue as HealthOption) || null,
+  );
+  const [therapyReason, setTherapyReason] = useState<string | null>(
+    storedInfo.therapyReason || null,
+  );
   const [errors, setErrors] = useState<FormErrors>({});
 
   // ── Profile picture picker ─────────────────────────────────────────────────
@@ -139,8 +147,25 @@ export const FcFillInfoScreen: React.FC = () => {
       return;
     }
     setErrors({});
+    setDependentBasicInfo({
+      profilePic,
+      name: name.trim(),
+      age: age.trim(),
+      relation: relation || '',
+      healthIssue: healthIssue || '',
+      therapyReason: therapyReason || '',
+    });
     navigation.navigate('FcTherapyInfo');
-  }, [navigation, profilePic, name, age, relation, healthIssue, therapyReason]);
+  }, [
+    navigation,
+    profilePic,
+    name,
+    age,
+    relation,
+    healthIssue,
+    therapyReason,
+    setDependentBasicInfo,
+  ]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>

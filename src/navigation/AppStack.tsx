@@ -528,8 +528,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
-    boxShadow: '1.88732px 1.88732px 4.71831px rgba(0, 0, 0, 0.3), 0px 5.58333px 8.375px -5.58333px rgba(0, 0, 0, 0.1)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   fabNotifDot: {
     position: 'absolute',

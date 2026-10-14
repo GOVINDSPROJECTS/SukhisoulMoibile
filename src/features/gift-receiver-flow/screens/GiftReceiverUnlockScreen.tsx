@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,13 +33,30 @@ export const GiftReceiverUnlockScreen: React.FC = () => {
   const [showError, setShowError] = useState(false);
 
   const handleNext = () => {
-    // Simulate verification failure for demo — shows error modal
-    setShowError(true);
+    if (!couponCode.trim()) {
+      Alert.alert('Required Field', 'Please enter your therapy voucher coupon code.');
+      return;
+    }
+    if (!receiverName.trim()) {
+      Alert.alert('Required Field', 'Please enter the receiver name.');
+      return;
+    }
+    if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
+      Alert.alert('Invalid Contact', 'Please enter a valid phone number (at least 10 digits) or Gift ID.');
+      return;
+    }
+
+    // Supported promo codes for unlock: SUKHI2026, GIFT500, SOULGIFT, WELLNESS
+    const normalizedCode = couponCode.trim().toUpperCase();
+    if (['SUKHI2026', 'GIFT500', 'SOULGIFT', 'WELLNESS'].includes(normalizedCode)) {
+      navigation.navigate('GiftReceiverProfile');
+    } else {
+      setShowError(true);
+    }
   };
 
   const handleTryAgain = () => {
     setShowError(false);
-    navigation.navigate('GiftReceiverProfile');
   };
 
   const handleDismissError = () => {

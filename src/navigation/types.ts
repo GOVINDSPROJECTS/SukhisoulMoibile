@@ -37,6 +37,7 @@ export type AuthStackParamList = {
     time: string;
     duration: string;
     price?: number;
+    isFamilyCare?: boolean;
   };
   PaymentResult: {
     status: 'success' | 'failed' | 'approval_pending';
@@ -247,6 +248,7 @@ export type AppStackParamList = {
     time: string;
     duration: string;
     price?: number;
+    isFamilyCare?: boolean;
   };
   PaymentResult: {
     status: 'success' | 'failed' | 'approval_pending';
