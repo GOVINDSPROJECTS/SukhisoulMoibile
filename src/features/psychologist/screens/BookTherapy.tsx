@@ -388,12 +388,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     padding: normalize(24),
-    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
-    // shadowColor: '#162731',
-    // shadowOffset: { width: 0, height: 3 },
-    // shadowOpacity: 0.05,
-    // shadowRadius: 8,
-    // elevation: 3,
+    shadowColor: '#162731',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',

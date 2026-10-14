@@ -5,12 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Pressable
+  Pressable,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import { ArrowLeft, ArrowRight, BookLock, Calendar, CalendarCheck2, FileLock, GlobeLock, Lock, LockKeyhole } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, BookLock, Calendar, CalendarCheck2, FileLock, GlobeLock, Lock, LockKeyhole, Users } from 'lucide-react-native';
 import { AppText } from '@components/atoms/AppText';
 import { normalize } from '@utils/responsive';
 import { colors, useTheme } from '@theme/index';
@@ -23,7 +25,9 @@ import { OrderSummaryCard } from '../components/booking/OrderSummaryCard';
 
 import { api } from '@api/client';
 import { queryClient } from '@api/queryClient';
-import { ActivityIndicator } from 'react-native';
+import { useAuthStore } from '@features/auth/store/useAuthStore';
+import { useFamilyCareStore } from '@features/family-care/store/useFamilyCareStore';
+import RazorpayCheckout from 'react-native-razorpay';
 
 type ConfirmBookingRoute = RouteProp<RootStackParamList, 'ConfirmBooking'>;
 
@@ -38,6 +42,7 @@ export const ConfirmBooking: React.FC = () => {
   const route = useRoute<ConfirmBookingRoute>();
   const { borderRadius } = useTheme();
   const insets = useSafeAreaInsets();
+  const user = useAuthStore((state) => state.user);
 
   const {
     doctorName,
@@ -48,7 +53,10 @@ export const ConfirmBooking: React.FC = () => {
     time,
     duration,
     price: doctorPrice,
+    isFamilyCare,
   } = route.params;
+
+  const dependentInfo = useFamilyCareStore((state) => state.dependentInfo);
 
   const displayDate = dateFormatted || date;
 
@@ -77,37 +85,232 @@ export const ConfirmBooking: React.FC = () => {
   const handleConfirmPay = useCallback(async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-    const mockTxnId = `#${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
 
     try {
-      await api.post('/v1/bookings', {
+      const familyNotes = isFamilyCare
+        ? useFamilyCareStore.getState().getFormattedIntakeNotes()
+        : '';
+      const baseNotes = `Booked via mobile app (${PLAN_LABELS[selectedPlan]})`;
+      const combinedNotes = familyNotes
+        ? `${familyNotes}\n\n${baseNotes}`
+        : baseNotes;
+
+      // 1. Create booking in backend
+      const bookingRes = await api.post('/v1/bookings', {
         professional_uuid: doctorId,
         session_type: 'video',
         date,
         time,
         amount: finalAmount,
         status: 'pending_payment',
-        notes_for_professional: `Booked via mobile app (${PLAN_LABELS[selectedPlan]})`,
+        notes_for_professional: combinedNotes,
       });
-      // Invalidate therapist-dashboard & slots caches so updates reflect immediately in real-time
+
+      const payload = bookingRes.data?.data;
+      const paymentData = payload?.payment;
+
+      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['therapist-dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['professional-slots'] });
-    } catch (e) {
-      console.log('Booking API sync note:', e);
-    } finally {
+      queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
+
+      // If free session
+      if (finalAmount === 0 || paymentData?.gateway === 'free') {
+        useFamilyCareStore.getState().resetFamilyCare();
+        setIsSubmitting(false);
+        navigation.navigate('PaymentResult', {
+          status: 'success',
+          doctorName,
+          designation,
+          date: displayDate,
+          time,
+          amount: 0,
+          transactionId: 'FREE_SESSION',
+          planLabel: PLAN_LABELS[selectedPlan],
+        });
+        return;
+      }
+
+      // 2. Prepare Razorpay options
+      const razorpayKey = paymentData?.key_id;
+      const razorpayOrderId = paymentData?.gateway_order_id;
+      const paymentOrderUuid = paymentData?.payment_order_uuid;
+
+      if (!razorpayOrderId) {
+        throw new Error('Payment gateway order was not generated. Please try again.');
+      }
+
+      // Check if native module is available
+      if (!RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
+        console.warn('RazorpayCheckout native module is not linked or running in simulator mode.');
+        setIsSubmitting(false);
+        Alert.alert(
+          'Payment Gateway (Test Mode)',
+          'Razorpay native module is running in preview/simulator mode. Simulate a confirmed booking?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Simulate Success',
+              onPress: () => {
+                useFamilyCareStore.getState().resetFamilyCare();
+                navigation.navigate('PaymentResult', {
+                  status: 'approval_pending',
+                  doctorName,
+                  designation,
+                  date: displayDate,
+                  time,
+                  amount: finalAmount,
+                  transactionId: `SIM_${Date.now()}`,
+                  planLabel: PLAN_LABELS[selectedPlan],
+                });
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      const options = {
+        description: `Therapy Session (${PLAN_LABELS[selectedPlan]}) with ${doctorName}`,
+        image: 'https://sukhisoul.com/favicon.ico',
+        currency: paymentData?.currency || 'INR',
+        key: razorpayKey || 'rzp_test_default',
+        amount: Math.round(finalAmount * 100), // in paise
+        name: 'Sukhisoul Health',
+        order_id: razorpayOrderId,
+        prefill: {
+          email: user?.email || '',
+          contact: user?.phoneNumber || '',
+          name: user?.displayName || '',
+        },
+        theme: { color: colors.lightAppTheme[900] },
+      };
+
+      try {
+        const rzpResponse = await RazorpayCheckout.open(options);
+
+        // 3. Client signature verification against backend POST /v1/payments/verify
+        try {
+          await api.post('/v1/payments/verify', {
+            payment_order_uuid: paymentOrderUuid,
+            razorpay_order_id: rzpResponse.razorpay_order_id || razorpayOrderId,
+            razorpay_payment_id: rzpResponse.razorpay_payment_id,
+            razorpay_signature: rzpResponse.razorpay_signature,
+          });
+
+          queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['payment-history'] });
+
+          useFamilyCareStore.getState().resetFamilyCare();
+          setIsSubmitting(false);
+          navigation.navigate('PaymentResult', {
+            status: 'success',
+            doctorName,
+            designation,
+            date: displayDate,
+            time,
+            amount: finalAmount,
+            transactionId: rzpResponse.razorpay_payment_id,
+            planLabel: PLAN_LABELS[selectedPlan],
+          });
+        } catch (verifyErr: any) {
+          console.error('[Payment Verify Error]:', verifyErr);
+          useFamilyCareStore.getState().resetFamilyCare();
+          setIsSubmitting(false);
+          Alert.alert(
+            'Payment Recorded',
+            'Your payment was received. Our team will verify and confirm your session schedule shortly.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  navigation.navigate('PaymentResult', {
+                    status: 'approval_pending',
+                    doctorName,
+                    designation,
+                    date: displayDate,
+                    time,
+                    amount: finalAmount,
+                    transactionId: rzpResponse.razorpay_payment_id || 'PENDING_VERIFY',
+                    planLabel: PLAN_LABELS[selectedPlan],
+                  });
+                },
+              },
+            ]
+          );
+        }
+      } catch (rzpErr: any) {
+        setIsSubmitting(false);
+        console.log('[Razorpay Modal Result]:', rzpErr);
+        const isCancelled =
+          rzpErr?.code === 0 ||
+          rzpErr?.code === 2 ||
+          (typeof rzpErr?.description === 'string' && rzpErr.description.toLowerCase().includes('cancelled'));
+
+        if (isCancelled) {
+          Alert.alert('Payment Cancelled', 'You cancelled the payment. Your slot was not reserved.');
+        } else {
+          Alert.alert(
+            'Payment Failed',
+            rzpErr?.description || 'The transaction could not be processed. Please try again.',
+            [
+              {
+                text: 'View Status',
+                onPress: () => {
+                  navigation.navigate('PaymentResult', {
+                    status: 'failed',
+                    doctorName,
+                    designation,
+                    date: displayDate,
+                    time,
+                    amount: finalAmount,
+                    transactionId: 'FAILED',
+                    planLabel: PLAN_LABELS[selectedPlan],
+                  });
+                },
+              },
+              { text: 'Try Again', style: 'cancel' },
+            ]
+          );
+        }
+      }
+    } catch (apiErr: any) {
       setIsSubmitting(false);
-      navigation.navigate('PaymentResult', {
-        status: 'approval_pending',
-        doctorName,
-        designation,
-        date: displayDate,
-        time,
-        amount: finalAmount,
-        transactionId: mockTxnId,
-        planLabel: PLAN_LABELS[selectedPlan],
-      });
+      console.error('[Booking API Error]:', apiErr);
+      const statusCode = apiErr?.response?.status;
+      const apiMessage = apiErr?.response?.data?.message;
+
+      if (statusCode === 409) {
+        Alert.alert(
+          'Slot Unavailable',
+          apiMessage || 'This time slot is already booked by another user. Please choose a different time.',
+          [
+            {
+              text: 'Choose Another Slot',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Booking Failed',
+          apiMessage || 'Unable to initiate booking at this time. Please check your connection and try again.'
+        );
+      }
     }
-  }, [isSubmitting, selectedPlan, doctorName, doctorId, designation, date, displayDate, time, finalAmount, navigation]);
+  }, [
+    isSubmitting,
+    doctorId,
+    date,
+    time,
+    finalAmount,
+    selectedPlan,
+    doctorName,
+    designation,
+    displayDate,
+    user,
+    navigation,
+  ]);
 
   return (
     <SafeAreaView
@@ -158,6 +361,28 @@ export const ConfirmBooking: React.FC = () => {
           </AppText>
         </View>
 
+        {/* ── Family Care Dependent Card ─────────────────────────────────────── */}
+        {isFamilyCare && dependentInfo.name ? (
+          <View style={styles.familyCareCard}>
+            <View style={styles.familyCareIconCircle}>
+              <Users size={normalize(20)} color={colors.appThemeColor[900]} />
+            </View>
+            <View style={styles.familyCareContent}>
+              <View style={styles.familyCareBadgeRow}>
+                <AppText variant="caption" weight="extraBold" style={styles.familyCareBadgeText}>
+                  FAMILY CARE INTAKE ATTACHED
+                </AppText>
+              </View>
+              <AppText variant="body" weight="bold" style={styles.familyCareName}>
+                {dependentInfo.name} ({dependentInfo.relation})
+              </AppText>
+              <AppText variant="caption" weight="regular" style={styles.familyCareSub}>
+                Age: {dependentInfo.age} • Concern: {dependentInfo.therapyReason || 'General Support'}
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+
         {/* ── Booking Summary ──────────────────────────────────────────────── */}
         <BookingSummaryCard
           therapistName={doctorName}
@@ -193,8 +418,13 @@ export const ConfirmBooking: React.FC = () => {
 
         {/* ── Confirm & Pay CTA ────────────────────────────────────────────── */}
         <Pressable
-          style={({ pressed }) => [styles.ctaWrapper, pressed && { borderRadius: normalize(99), backgroundColor: colors.lightTints.blueLightTint[50], }]}
+          style={({ pressed }) => [
+            styles.ctaWrapper,
+            pressed && !isSubmitting && { borderRadius: normalize(99), backgroundColor: colors.lightTints.blueLightTint[50] },
+            isSubmitting && { opacity: 0.75 },
+          ]}
           onPress={handleConfirmPay}
+          disabled={isSubmitting}
         >
           <LinearGradient
             colors={[colors.lightAppTheme[700], colors.lightAppTheme[950]]}
@@ -202,10 +432,16 @@ export const ConfirmBooking: React.FC = () => {
             end={{ x: 1, y: 0.5 }}
             style={[styles.ctaGradient, { borderRadius: normalize(99), flexDirection: 'row' }]}
           >
-            <AppText variant="body" weight="bold" style={styles.ctaText}>
-              Confirm & Pay
-            </AppText>
-            <ArrowRight strokeWidth={2} color={"white"} style={{ marginTop: normalize(3), marginLeft: normalize(10) }} />
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <AppText variant="body" weight="bold" style={styles.ctaText}>
+                  Confirm & Pay (₹{finalAmount})
+                </AppText>
+                <ArrowRight strokeWidth={2} color={"white"} style={{ marginTop: normalize(3), marginLeft: normalize(10) }} />
+              </>
+            )}
           </LinearGradient>
         </Pressable>
 
@@ -328,5 +564,46 @@ const styles = StyleSheet.create({
     fontSize: normalize(11),
     color: colors.typographyColor.Medium,
     lineHeight: normalize(16),
+  },
+
+  // ── Family Care Badge ─────────────────────────────────────────────────────
+  familyCareCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: normalize(16),
+    padding: normalize(14),
+    marginBottom: normalize(14),
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  familyCareIconCircle: {
+    width: normalize(40),
+    height: normalize(40),
+    borderRadius: normalize(20),
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: normalize(12),
+  },
+  familyCareContent: {
+    flex: 1,
+  },
+  familyCareBadgeRow: {
+    marginBottom: normalize(2),
+  },
+  familyCareBadgeText: {
+    fontSize: normalize(10),
+    color: '#1D4ED8',
+    letterSpacing: 0.5,
+  },
+  familyCareName: {
+    fontSize: normalize(14),
+    color: '#1E293B',
+    marginBottom: normalize(2),
+  },
+  familyCareSub: {
+    fontSize: normalize(11),
+    color: '#64748B',
   },
 });
