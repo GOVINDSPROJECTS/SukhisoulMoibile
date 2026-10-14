@@ -1,28 +1,103 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   StatusBar,
   Linking,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, User, Phone, ShieldCheck, Heart, HeartHandshake, User2, ArrowRight, LogOut } from 'lucide-react-native';
+import { ArrowLeft, User, Phone, ShieldCheck, Heart, HeartHandshake, User2, ArrowRight, LogOut, AlertTriangle, Siren } from 'lucide-react-native';
 import { AppText } from '@components/atoms/AppText';
 import { normalize } from '@utils/responsive';
 import { colors } from '@theme/index';
 import type { NavigationProp } from '@navigation/types';
 import LinearGradient from 'react-native-linear-gradient';
+import { api } from '@api/client';
 
 export const SosScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const [isTriggeringSos, setIsTriggeringSos] = useState(false);
+  const [sosActive, setSosActive] = useState(false);
 
   const handleCallTrusted = () => {
-    // Placeholder: navigate to emergency contacts or open dialer
-    Linking.openURL('tel:');
+    Alert.alert(
+      'Emergency Call Assistance',
+      'Choose a crisis helpline or dial your personal contact:',
+      [
+        {
+          text: 'National Emergency (112)',
+          onPress: () => Linking.openURL('tel:112'),
+        },
+        {
+          text: 'KIRAN Helpline (1800-599-0019)',
+          onPress: () => Linking.openURL('tel:18005990019'),
+        },
+        {
+          text: 'Open Phone Dialer',
+          onPress: () => Linking.openURL('tel:'),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
   };
+
+  const handleTriggerSos = useCallback(() => {
+    Alert.alert(
+      'Trigger Emergency SOS?',
+      'This will immediately alert our emergency response team and dispatch a high-risk case flag to your assigned therapist.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send SOS Alert',
+          style: 'destructive',
+          onPress: async () => {
+            setIsTriggeringSos(true);
+            try {
+              await api.post('/v1/crisis/sos', {
+                notes: 'Emergency SOS alert initiated from mobile app',
+              });
+              setSosActive(true);
+              Alert.alert(
+                'SOS Alert Dispatched',
+                'Your crisis alert has been broadcasted to the clinical response team with urgent priority.\n\nPlease call 112 or 1800-599-0019 if you are in immediate danger.',
+                [
+                  {
+                    text: 'Call KIRAN (1800-599-0019)',
+                    onPress: () => Linking.openURL('tel:18005990019'),
+                  },
+                  { text: 'OK' },
+                ]
+              );
+            } catch (err: any) {
+              console.log('[SOS Trigger error]:', err?.message);
+              Alert.alert(
+                'Emergency Services',
+                'If you are in immediate distress or danger, please connect directly to national emergency lines:',
+                [
+                  {
+                    text: 'Call 112 (Emergency)',
+                    onPress: () => Linking.openURL('tel:112'),
+                  },
+                  {
+                    text: 'Call Tele-MANAS (14416)',
+                    onPress: () => Linking.openURL('tel:14416'),
+                  },
+                  { text: 'Close', style: 'cancel' },
+                ]
+              );
+            } finally {
+              setIsTriggeringSos(false);
+            }
+          },
+        },
+      ]
+    );
+  }, []);
 
   const handleGovernmentNumbers = () => {
     navigation.navigate('SosHelpline');
@@ -129,6 +204,42 @@ export const SosScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Emergency SOS Broadcast Action */}
+        <TouchableOpacity
+          style={[
+            styles.sosAlertCard,
+            sosActive && { backgroundColor: '#FEE2E2', borderColor: '#DC2626' }
+          ]}
+          activeOpacity={0.85}
+          onPress={handleTriggerSos}
+          disabled={isTriggeringSos}
+        >
+          <View style={styles.sosAlertLeft}>
+            <View style={[styles.sosAlertIconWrapper, sosActive && { backgroundColor: '#DC2626' }]}>
+              {isTriggeringSos ? (
+                <ActivityIndicator color={sosActive ? '#FFFFFF' : '#DC2626'} size="small" />
+              ) : (
+                <Siren size={normalize(22)} color={sosActive ? '#FFFFFF' : '#DC2626'} strokeWidth={2} />
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="body" weight="extraBold" style={{ color: '#991B1B', fontSize: normalize(14) }}>
+                {sosActive ? 'Emergency Alert Active' : 'Dispatch Emergency SOS'}
+              </AppText>
+              <AppText variant="caption" weight="medium" style={{ color: '#B91C1C', marginTop: normalize(2), fontSize: normalize(11) }}>
+                {sosActive
+                  ? 'Response protocol initiated. Support team is alerted.'
+                  : 'Immediately flags your case to crisis specialists & therapist'}
+              </AppText>
+            </View>
+          </View>
+          <View style={[styles.sosAlertBtnBadge, sosActive && { backgroundColor: '#991B1B' }]}>
+            <AppText variant="caption" weight="bold" style={{ color: '#FFFFFF', fontSize: normalize(10) }}>
+              {isTriggeringSos ? 'SENDING' : sosActive ? 'ACTIVE' : 'SOS ALERT'}
+            </AppText>
+          </View>
+        </TouchableOpacity>
+
         {/* I Feel Safe Card */}
         <View style={styles.safeCard}>
           <View style={styles.safeIconWrapper}>
@@ -212,7 +323,11 @@ const styles = StyleSheet.create({
     marginBottom: normalize(10),
   },
   heroIcon: {
-    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
     borderRadius: normalize(999),
     padding: normalize(10),
     display: 'flex',
@@ -289,7 +404,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'flex-end',
-    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   arrowText: {
     fontSize: normalize(14),
@@ -348,5 +467,39 @@ const styles = StyleSheet.create({
   quickExitText: {
     color: '#FFFFFF',
     fontSize: normalize(16),
+  },
+  sosAlertCard: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    borderRadius: normalize(20),
+    padding: normalize(14),
+    marginBottom: normalize(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sosAlertLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: normalize(12),
+    marginRight: normalize(10),
+  },
+  sosAlertIconWrapper: {
+    width: normalize(40),
+    height: normalize(40),
+    borderRadius: normalize(10),
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sosAlertBtnBadge: {
+    backgroundColor: '#DC2626',
+    borderRadius: normalize(8),
+    paddingHorizontal: normalize(10),
+    paddingVertical: normalize(6),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

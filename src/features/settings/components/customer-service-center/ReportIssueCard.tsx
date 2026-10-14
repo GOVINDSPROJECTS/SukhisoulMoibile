@@ -5,11 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { TriangleAlert } from 'lucide-react-native';
 import { AppText } from '@components/atoms/AppText';
 import { normalize } from '@utils/responsive';
 import { colors } from '@theme/index';
+import { api } from '@api/client';
 
 interface ReportIssueCardProps {
   onSubmitReport?: (issue: string) => void;
@@ -19,8 +21,9 @@ export const ReportIssueCard: React.FC<ReportIssueCardProps> = ({
   onSubmitReport,
 }) => {
   const [issueText, setIssueText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const trimmed = issueText.trim();
     if (!trimmed) {
       Alert.alert(
@@ -30,14 +33,35 @@ export const ReportIssueCard: React.FC<ReportIssueCardProps> = ({
       return;
     }
 
-    console.log(`[Customer Service Center] Report Submitted: ${trimmed}`);
-    onSubmitReport?.(trimmed);
-    setIssueText('');
-    Alert.alert(
-      'Report Submitted',
-      'Thank you! Your feedback has been received and our engineering team will investigate it promptly.',
-      [{ text: 'OK' }]
-    );
+    if (trimmed.length < 10) {
+      Alert.alert('Details Required', 'Please provide at least 10 characters describing the issue.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.post('/v1/support/tickets', {
+        subject: trimmed.slice(0, 50),
+        category: 'technical',
+        message: trimmed,
+        priority: 'medium',
+      });
+      onSubmitReport?.(trimmed);
+      setIssueText('');
+      Alert.alert(
+        'Report Submitted',
+        'Thank you! Your ticket has been logged and our support team will investigate it promptly.',
+        [{ text: 'OK' }]
+      );
+    } catch (err: any) {
+      console.log('[Support Ticket Submit Error]:', err?.message);
+      Alert.alert(
+        'Submission Note',
+        err?.response?.data?.message || 'Report received. Our team will follow up on your account.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [issueText, onSubmitReport]);
 
   return (

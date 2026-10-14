@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, StatusBar, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@components/atoms/AppText';
@@ -9,19 +9,34 @@ import type { NavigationProp } from '@navigation/types';
 import { NutqHeader } from '../components/NutqHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import { CommonContinueButton } from '@/components/atoms/CommonContinueButton';
+import { useNutqStore } from '../store/useNutqStore';
 
 export const NutqPrivacyScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const submitQuestionnaire = useNutqStore((state) => state.submitQuestionnaire);
+  const isSubmitting = useNutqStore((state) => state.isSubmitting);
 
-  const handleAccept = () => {
-    // Navigation action after completing flow
-    navigation.navigate('MainTabs');
+  const handleAccept = async () => {
+    if (isSubmitting) return;
+    try {
+      await submitQuestionnaire(true);
+    } catch (e) {
+      console.log('[Nutq complete error]:', e);
+    } finally {
+      navigation.navigate('MainTabs');
+    }
   };
 
-  const handleReject = () => {
-    // Navigation action after completing flow
-    navigation.navigate('MainTabs');
+  const handleReject = async () => {
+    if (isSubmitting) return;
+    try {
+      await submitQuestionnaire(false);
+    } catch (e) {
+      console.log('[Nutq complete error]:', e);
+    } finally {
+      navigation.navigate('MainTabs');
+    }
   };
 
   return (
@@ -45,17 +60,29 @@ export const NutqPrivacyScreen: React.FC = () => {
         </AppText>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity activeOpacity={0.85} onPress={handleAccept} style={styles.buttonWrapper}>
-            <View
-              style={styles.acceptButton}
-            >
-              <AppText variant="body" weight="regular" family='secondary' style={styles.acceptText}>
-                Accept
-              </AppText>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleAccept}
+            style={styles.buttonWrapper}
+            disabled={isSubmitting}
+          >
+            <View style={[styles.acceptButton, isSubmitting && { opacity: 0.7 }]}>
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <AppText variant="body" weight="regular" family='secondary' style={styles.acceptText}>
+                  Accept
+                </AppText>
+              )}
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity activeOpacity={0.8} onPress={handleReject} style={styles.rejectButton}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleReject}
+            style={styles.rejectButton}
+            disabled={isSubmitting}
+          >
             <AppText variant="body" weight="regular" family='secondary' style={styles.rejectText}>
               Reject Non essentials
             </AppText>

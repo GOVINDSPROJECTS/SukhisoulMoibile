@@ -11,13 +11,20 @@ import { PrivacyNote } from '../components/PrivacyNote';
 import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { NutqSelectableRow } from '../components/NutqSelectableRow';
 import { NutqTextArea } from '../components/NutqTextArea';
+import { useNutqStore } from '../store/useNutqStore';
 
 export const NutqHistoryScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const setHistory = useNutqStore((state) => state.setHistory);
 
-  const [attendedTherapy, setAttendedTherapy] = useState<string>('');
-  const [healthProblems, setHealthProblems] = useState<string>('');
+  const [attendedTherapy, setAttendedTherapy] = useState<string>(useNutqStore.getState().attendedTherapy);
+  const [healthProblems, setHealthProblems] = useState<string>(useNutqStore.getState().healthProblems);
+
+  const handleContinue = () => {
+    setHistory(attendedTherapy, healthProblems);
+    navigation.navigate('NutqPreferences');
+  };
 
   return (
     <SafeAreaView
@@ -78,7 +85,7 @@ export const NutqHistoryScreen: React.FC = () => {
 
           <CommonContinueButton
             label="Continue"
-            onPress={() => navigation.navigate('NutqPreferences')}
+            onPress={handleContinue}
           />
         </ScrollView>
       </KeyboardAvoidingView>

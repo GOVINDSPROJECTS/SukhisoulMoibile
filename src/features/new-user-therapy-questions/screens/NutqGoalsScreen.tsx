@@ -10,6 +10,7 @@ import { NutqHeader } from '../components/NutqHeader';
 import { PrivacyNote } from '../components/PrivacyNote';
 import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { NutqSelectableRow } from '../components/NutqSelectableRow';
+import { useNutqStore } from '../store/useNutqStore';
 
 const GOALS = [
   'Manage stress and anxiety',
@@ -24,13 +25,19 @@ const GOALS = [
 export const NutqGoalsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const setGoals = useNutqStore((state) => state.setGoals);
 
-  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [selectedGoals, setSelectedGoals] = useState<string[]>(useNutqStore.getState().selectedGoals);
 
   const toggleGoal = (label: string) => {
     setSelectedGoals(prev =>
       prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
     );
+  };
+
+  const handleContinue = () => {
+    setGoals(selectedGoals);
+    navigation.navigate('NutqPrivacy');
   };
 
   return (
@@ -74,7 +81,7 @@ export const NutqGoalsScreen: React.FC = () => {
 
         <CommonContinueButton
           label="Continue"
-          onPress={() => navigation.navigate('NutqPrivacy')}
+          onPress={handleContinue}
         />
       </ScrollView>
     </SafeAreaView>

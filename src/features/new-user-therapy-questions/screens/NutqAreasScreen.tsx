@@ -10,6 +10,7 @@ import { NutqHeader } from '../components/NutqHeader';
 import { PrivacyNote } from '../components/PrivacyNote';
 import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { NutqSelectableRow } from '../components/NutqSelectableRow';
+import { useNutqStore } from '../store/useNutqStore';
 
 const AREAS = [
   { label: 'Work / Studies', iconText: '💻' },
@@ -23,13 +24,19 @@ const AREAS = [
 export const NutqAreasScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const setAreas = useNutqStore((state) => state.setAreas);
 
-  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [selectedAreas, setSelectedAreas] = useState<string[]>(useNutqStore.getState().selectedAreas);
 
   const toggleArea = (label: string) => {
     setSelectedAreas(prev =>
       prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
     );
+  };
+
+  const handleContinue = () => {
+    setAreas(selectedAreas);
+    navigation.navigate('NutqDuration');
   };
 
   return (
@@ -74,7 +81,7 @@ export const NutqAreasScreen: React.FC = () => {
 
         <CommonContinueButton
           label="Continue"
-          onPress={() => navigation.navigate('NutqDuration')}
+          onPress={handleContinue}
         />
       </ScrollView>
     </SafeAreaView>

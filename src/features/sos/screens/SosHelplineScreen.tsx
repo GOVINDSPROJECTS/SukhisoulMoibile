@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, CircleSlash, Phone, ShieldCheck, Siren, Venus } from 'lucide-react-native';
+import { ArrowLeft, CircleSlash, Phone, ShieldCheck, Siren, Venus, HeartPulse } from 'lucide-react-native';
 import { AppText } from '@components/atoms/AppText';
 import { normalize } from '@utils/responsive';
 import { colors } from '@theme/index';
 import type { NavigationProp } from '@navigation/types';
 import LinearGradient from 'react-native-linear-gradient';
+import { api } from '@api/client';
 
 interface HelplineEntry {
   id: string;
@@ -26,7 +27,7 @@ interface HelplineEntry {
   icon: React.ReactNode;
 }
 
-const HELPLINES: HelplineEntry[] = [
+const DEFAULT_HELPLINES: HelplineEntry[] = [
   {
     id: '1',
     name: 'National Emergency Response',
@@ -37,6 +38,22 @@ const HELPLINES: HelplineEntry[] = [
   },
   {
     id: '2',
+    name: 'Tele-MANAS (Mental Health Govt of India)',
+    number: '14416',
+    iconBg: colors.green[50],
+    iconColor: colors.green[500],
+    icon: <HeartPulse size={normalize(23)} color={colors.green[500]} />,
+  },
+  {
+    id: '3',
+    name: 'KIRAN Mental Health Helpline',
+    number: '18005990019',
+    iconBg: colors.blue[50],
+    iconColor: colors.blue[600],
+    icon: <CircleSlash size={normalize(23)} color={colors.blue[600]} />,
+  },
+  {
+    id: '4',
     name: "Women's Helpline",
     number: '181',
     iconBg: colors.lightTints.pinkLightTint[50],
@@ -44,29 +61,46 @@ const HELPLINES: HelplineEntry[] = [
     icon: <Venus size={normalize(23)} color={colors.colorPalet['Color 4']} />,
   },
   {
-    id: '3',
-    name: 'Police',
-    number: '100',
-    iconBg: colors.blue[50],
-    iconColor: colors.blue[600],
-    icon: <Siren size={normalize(23)} color={colors.blue[600]} />,
-  },
-  {
-    id: '4',
-    name: 'Suicide & Crisis Lifeline',
-    number: '988',
-    iconBg: colors.green[50],
-    iconColor: colors.green[500],
-    icon: <CircleSlash size={normalize(23)} color={colors.green[500]} />,
+    id: '5',
+    name: 'Vandrevala Mental Health Foundation',
+    number: '9999666555',
+    iconBg: colors.lightTints.blueLightTint[100],
+    iconColor: colors.blue[700],
+    icon: <Siren size={normalize(23)} color={colors.blue[700]} />,
   },
 ];
 
 export const SosHelplineScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const [helplines, setHelplines] = useState<HelplineEntry[]>(DEFAULT_HELPLINES);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/v1/crisis/resources')
+      .then((res) => {
+        if (!isMounted) return;
+        const apiResources = res.data?.data;
+        if (Array.isArray(apiResources) && apiResources.length > 0) {
+          const dynamicEntries: HelplineEntry[] = apiResources.map((item: any, idx: number) => ({
+            id: `api_${item.id || idx}`,
+            name: item.title,
+            number: item.content || item.url || '112',
+            iconBg: colors.blue[50],
+            iconColor: colors.blue[600],
+            icon: <Phone size={normalize(20)} color={colors.blue[600]} />,
+          }));
+          setHelplines([...DEFAULT_HELPLINES, ...dynamicEntries]);
+        }
+      })
+      .catch((e) => {
+        console.log('[Crisis resources load]:', e?.message);
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   const handleCall = (number: string) => {
-    Linking.openURL(`tel:${number}`);
+    Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`);
   };
 
   return (
@@ -116,7 +150,7 @@ export const SosHelplineScreen: React.FC = () => {
 
         {/* Helpline Cards */}
         <View style={styles.helplinesContainer}>
-          {HELPLINES.map((entry) => (
+          {helplines.map((entry) => (
             <View key={entry.id} style={styles.helplineRow}>
               <View style={[styles.helplineIcon, { backgroundColor: entry.iconBg }]}>
                 {entry.icon}

@@ -10,13 +10,20 @@ import { NutqHeader } from '../components/NutqHeader';
 import { PrivacyNote } from '../components/PrivacyNote';
 import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { NutqSelectableRow } from '../components/NutqSelectableRow';
+import { useNutqStore } from '../store/useNutqStore';
 
 export const NutqPreferencesScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const setPreferences = useNutqStore((state) => state.setPreferences);
 
-  const [genderPref, setGenderPref] = useState<string>('');
-  const [sessionPref, setSessionPref] = useState<string>('');
+  const [genderPref, setGenderPref] = useState<string>(useNutqStore.getState().genderPref);
+  const [sessionPref, setSessionPref] = useState<string>(useNutqStore.getState().sessionPref);
+
+  const handleContinue = () => {
+    setPreferences(genderPref, sessionPref);
+    navigation.navigate('NutqSafety');
+  };
 
   return (
     <SafeAreaView
@@ -88,7 +95,7 @@ export const NutqPreferencesScreen: React.FC = () => {
 
         <CommonContinueButton
           label="Continue"
-          onPress={() => navigation.navigate('NutqSafety')}
+          onPress={handleContinue}
         />
       </ScrollView>
     </SafeAreaView>

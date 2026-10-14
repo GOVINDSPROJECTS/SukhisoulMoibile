@@ -11,6 +11,7 @@ import { PrivacyNote } from '../components/PrivacyNote';
 import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { ChipItem } from '../components/ChipItem';
 import { CustomDropdown } from '../components/CustomDropdown';
+import { useNutqStore } from '../store/useNutqStore';
 
 const ISSUES = [
   { label: 'Anxiety', emoji: '😰' },
@@ -28,14 +29,20 @@ const DROPDOWN_OPTIONS = ISSUES.map(i => i.label);
 export const NutqIssuesScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const setIssues = useNutqStore((state) => state.setIssues);
 
-  const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
-  const [mainIssue, setMainIssue] = useState<string>('');
+  const [selectedIssues, setSelectedIssues] = useState<string[]>(useNutqStore.getState().selectedIssues);
+  const [mainIssue, setMainIssue] = useState<string>(useNutqStore.getState().mainIssue);
 
   const toggleIssue = (label: string) => {
     setSelectedIssues(prev =>
       prev.includes(label) ? prev.filter(i => i !== label) : [...prev, label]
     );
+  };
+
+  const handleContinue = () => {
+    setIssues(selectedIssues, mainIssue);
+    navigation.navigate('NutqAreas');
   };
 
   return (
@@ -94,7 +101,7 @@ export const NutqIssuesScreen: React.FC = () => {
 
         <CommonContinueButton
           label="Continue"
-          onPress={() => navigation.navigate('NutqAreas')}
+          onPress={handleContinue}
         />
       </ScrollView>
     </SafeAreaView>

@@ -10,6 +10,7 @@ import { NutqHeader } from '../components/NutqHeader';
 import { PrivacyNote } from '../components/PrivacyNote';
 import { CommonContinueButton } from '@components/atoms/CommonContinueButton';
 import { NutqSelectableRow } from '../components/NutqSelectableRow';
+import { useNutqStore } from '../store/useNutqStore';
 
 const DURATIONS = [
   'Less than 1 month',
@@ -22,8 +23,14 @@ const DURATIONS = [
 export const NutqDurationScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const setDuration = useNutqStore((state) => state.setDuration);
 
-  const [selectedDuration, setSelectedDuration] = useState<string>('');
+  const [selectedDuration, setSelectedDuration] = useState<string>(useNutqStore.getState().selectedDuration);
+
+  const handleContinue = () => {
+    setDuration(selectedDuration);
+    navigation.navigate('NutqHistory');
+  };
 
   return (
     <SafeAreaView
@@ -66,7 +73,7 @@ export const NutqDurationScreen: React.FC = () => {
 
         <CommonContinueButton
           label="Continue"
-          onPress={() => navigation.navigate('NutqHistory')}
+          onPress={handleContinue}
         />
       </ScrollView>
     </SafeAreaView>
