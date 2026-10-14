@@ -126,20 +126,8 @@ export const OTPScreen: React.FC = () => {
       if (currentConfirmation && currentConfirmation.confirm) {
         await currentConfirmation.confirm(code);
       } else {
-        // Dev fallback: Set authenticated user state
-        const phoneDigits = (phoneNumber || '9876543210').replace(/\D/g, '');
-        const mockUser: any = {
-          uid: 'user_' + (phoneDigits.slice(-6) || '1024'),
-          displayName: 'Prathmesh Deokar',
-          email: 'user@sukhisoul.com',
-          phoneNumber: phoneNumber || '+91 98765 43210',
-          photoURL: null,
-        };
-        useAuthStore.getState().setUser(mockUser);
-        setTimeout(() => {
-          setLoading(false);
-          navigation.navigate('App');
-        }, 600);
+        setLoading(false);
+        Alert.alert('Verification Error', 'Verification session has expired. Please request a new OTP code.');
         return;
       }
     } catch (error: any) {
@@ -398,11 +386,6 @@ export const OTPScreen: React.FC = () => {
               />
 
 
-              <TouchableOpacity onPress={() => { navigation.navigate('Home'); }} activeOpacity={0.5} >
-                <Text style={[{ color: colors.lightTints.redLightTint2[400], fontFamily: typography.fontFamily.primary.bold,  paddingTop:0, textAlign:'center',borderRadius:10, marginTop: 10 }]}>
-                  SKIP SCREEN (DEV ONLY)
-                </Text>
-              </TouchableOpacity>
 
             </View>
           </View>

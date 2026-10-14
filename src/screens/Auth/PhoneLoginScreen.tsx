@@ -15,6 +15,7 @@ import {
   UIManager,
   Animated,
   Easing,
+  Alert,
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 
@@ -195,11 +196,10 @@ export const PhoneLoginScreen: React.FC = () => {
     }
 
     setLoading(true);
-    // Simulate professional dashboard entry
     setTimeout(() => {
       setLoading(false);
-      navigation.navigate('App');
-    }, 1500);
+      Alert.alert('Notice', 'Therapist web portal authentication is enabled. Please log in via the web dashboard.');
+    }, 1000);
   };
 
   const handleGoogleSignIn = async () => {
@@ -267,121 +267,6 @@ export const PhoneLoginScreen: React.FC = () => {
                 onPress={handleGetStarted}
                 style={styles.getStartedBtn}
               />
-              <View style={{ alignItems: 'center', borderWidth: 1, borderColor: 'red', width: '100%', paddingVertical: 5, paddingHorizontal: 5, borderRadius: 15, backgroundColor: colors.lightTints.redLightTint2[50], marginHorizontal: normalize(-15) }}>
-                <AppText color={colors.colorPalet['Color 6']} family='secondary' weight='black' style={{ fontSize: normalize(10) }}>DEV ONLY</AppText>
-                <View style={{ display: 'flex', flexDirection: 'column', gap: 0, justifyContent: 'center', alignItems: 'center', width: '100%', }}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContentDev}
-                  >
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('Home'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Goto Home</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('PsychologistProfile'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>PsychologistProfile</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('DcNameDob'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Data Collection Questions</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('NutqIssues'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>New User Therapy Questions</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('QbsFeeling'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Questions before Session</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('SessionCompleted'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Session Completed Client</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('InboxList'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Inbox List</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('Chat'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Chat Screen</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('GiftIntro'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>GiftIntroScreen</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('GiftReceiverUnlock'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Gift reciever flow </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('FcFillInfo'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Family Care flow </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('Notifications'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>Notifications</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => { navigation.navigate('Sos'); }}
-                      activeOpacity={0.5}
-                      style={styles.buttonWrapper}
-                    >
-                      <Text style={styles.buttonText}>SOS</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-
-                </View>
-              </View>
 
               {/* Social Login circles */}
               <View style={styles.socialOnboarding}>

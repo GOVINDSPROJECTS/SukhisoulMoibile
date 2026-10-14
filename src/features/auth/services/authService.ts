@@ -99,7 +99,8 @@ class AuthService {
     try {
       // Use the pre-configured axios client
       const { api } = require('../../../api/client');
-      const response = await api.post('/auth/firebase', {
+      const response = await api.post('/v1/auth/firebase', {
+        firebase_token: idToken,
         id_token: idToken,
       });
       return response.data;
@@ -115,7 +116,7 @@ class AuthService {
   async updateProfile(data: { name?: string; email?: string }): Promise<any> {
     try {
       const { api } = require('../../../api/client');
-      const response = await api.post('/user/profile', data);
+      const response = await api.put('/v1/users/me', data);
       return response.data;
     } catch (error) {
       console.error('Update Profile Error:', error);

@@ -3,6 +3,7 @@ import { getAuth, onAuthStateChanged, FirebaseAuthTypes } from '@react-native-fi
 
 interface AuthState {
   user: FirebaseAuthTypes.User | null;
+  backendUser: any | null;
   laravelToken: string | null;
   isNewUser: boolean;
   isLoading: boolean;
@@ -21,6 +22,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  backendUser: null,
   laravelToken: null,
   isNewUser: false,
   isLoading: false,
@@ -46,15 +48,17 @@ export const useAuthStore = create<AuthState>((set) => ({
           const data = await authService.syncWithBackend(idToken);
           const token = data?.access_token || data?.data?.token || data?.token || null;
           const isNewUser = !!(data?.is_new_user ?? data?.data?.is_new_user);
+          const backendUser = data?.user || data?.data?.user || null;
           set({ 
             laravelToken: token,
-            isNewUser: isNewUser 
+            isNewUser: isNewUser,
+            backendUser: backendUser,
           });
         } catch (error) {
           console.error('Initial Backend Sync Failed:', error);
         }
       } else {
-        set({ user: null, laravelToken: null, isNewUser: false, isInitializing: false });
+        set({ user: null, backendUser: null, laravelToken: null, isNewUser: false, isInitializing: false });
       }
     });
     return subscriber;
@@ -66,14 +70,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       console.error('Logout error:', error);
     }
-    set({ user: null, laravelToken: null, isNewUser: false });
+    set({ user: null, backendUser: null, laravelToken: null, isNewUser: false });
   },
   completeProfile: async (data) => {
     const { authService } = require('../services/authService');
     set({ isLoading: true, error: null });
     try {
       const response = await authService.updateProfile(data);
-      set({ user: response.user, isNewUser: false });
+      set({ backendUser: response.data?.user || response.user, isNewUser: false });
     } catch (error: any) {
       const serverMessage = error.response?.data?.message || error.message;
       const validationErrors = error.response?.data?.errors;

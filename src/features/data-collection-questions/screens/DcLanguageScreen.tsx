@@ -77,8 +77,7 @@ export const DcLanguageScreen: React.FC = () => {
         <CommonContinueButton
           label="Continue"
           onPress={() => {
-            // End of flow, perhaps navigate to Home
-            // navigation.navigate('Home'); 
+            navigation.navigate('NutqIssues');
           }}
         />
       </ScrollView>
